@@ -1,0 +1,163 @@
+:root {
+  color-scheme: light;
+  --bg: #f4efe6;
+  --panel: rgba(255, 250, 242, 0.96);
+  --ink: #1b1916;
+  --muted: #675e53;
+  --accent: #bd4b2a;
+  --accent-strong: #96371d;
+  --line: rgba(27, 25, 22, 0.12);
+  --shadow: 0 18px 40px rgba(102, 76, 48, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  width: 380px;
+  min-height: 520px;
+  font-family: Georgia, "Times New Roman", serif;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at top right, rgba(189, 75, 42, 0.22), transparent 32%),
+    linear-gradient(180deg, #f8f2ea 0%, var(--bg) 100%);
+}
+
+.app {
+  padding: 18px;
+}
+
+.hero,
+.filters,
+.actions,
+.status,
+.results {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.hero {
+  padding: 18px 18px 14px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.subtitle {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.filters,
+.actions,
+.status,
+.results {
+  margin-top: 12px;
+  padding: 14px;
+}
+
+.field {
+  display: block;
+}
+
+.field + .field {
+  margin-top: 12px;
+}
+
+.field span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+input,
+select,
+button {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  font: inherit;
+}
+
+input,
+select {
+  padding: 10px 12px;
+  background: #fffdf9;
+}
+
+button {
+  padding: 11px 12px;
+  background: white;
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button + button {
+  margin-top: 8px;
+}
+
+button.primary {
+  background: var(--accent);
+  color: white;
+  border-color: transparent;
+}
+
+button.primary:hover {
+  background: var(--accent-strong);
+}
+
+.status {
+  min-height: 62px;
+}
+
+.status p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.results-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+#resultPreview {
+  margin: 0;
+  max-height: 220px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 12px;
+  background: #fffdf9;
+  border: 1px solid var(--line);
+  font-family: "Courier New", monospace;
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telega.in Parser</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section class="hero">
+        <p class="eyebrow">Telega.in</p>
+        <h1>Parser</h1>
+        <p class="subtitle">Считывает текущую карточку канала или все видимые карточки каталога.</p>
+      </section>
+
+      <section class="filters">
+        <label class="field">
+          <span>Город</span>
+          <input id="cityFilter" type="text" placeholder="Например, Москва" />
+        </label>
+
+        <label class="field">
+          <span>Тип</span>
+          <select id="typeFilter">
+            <option value="">Все</option>
+            <option value="telegram">Telegram</option>
+            <option value="max">Max</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="actions">
+        <button id="parseButton" class="primary">Parse current page</button>
+        <button id="jsonButton">Export JSON</button>
+        <button id="csvButton">Export CSV</button>
+      </section>
+
+      <section class="status">
+        <p id="statusText">Откройте страницу `telega.in` и нажмите `Parse current page`.</p>
+      </section>
+
+      <section class="results">
+        <div class="results-head">
+          <span>Результат</span>
+          <strong id="resultCount">0</strong>
+        </div>
+        <pre id="resultPreview">[]</pre>
+      </section>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+  </html>

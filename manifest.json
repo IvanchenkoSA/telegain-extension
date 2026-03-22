@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Telega.in Parser",
+  "version": "1.0.0",
+  "description": "Parses telega.in channel pages and catalog cards, then exports JSON or CSV.",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://telega.in/*"
+  ],
+  "action": {
+    "default_title": "Telega.in Parser",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://telega.in/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
