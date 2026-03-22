@@ -21,6 +21,16 @@ function parseMetric(rawValue) {
   return Math.round(base * (multipliers[suffix] || 1));
 }
 
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    if (value !== null && value !== undefined && value !== "") {
+      return value;
+    }
+  }
+
+  return null;
+}
+
 function parsePrice(rawValue) {
   if (!rawValue) {
     return null;
@@ -45,6 +55,14 @@ function extractLabelValue(text, label) {
   }
 
   return null;
+}
+
+function extractCurrencyValues(text) {
+  const matches = text.match(/\d[\d\s.,]*\s*₽/g) || [];
+
+  return matches
+    .map((value) => parsePrice(value))
+    .filter((value) => Number.isFinite(value));
 }
 
 function inferType(text, href = "") {
@@ -86,6 +104,16 @@ function normalizeChannel(item) {
   };
 }
 
+function isCatalogPage() {
+  return /\/catalog(?:\/|$|\?)/.test(location.href)
+    || /каталог проверенных каналов/i.test(document.body?.innerText || "")
+    || /каталог телеграм каналов/i.test(document.title);
+}
+
+function isChannelPage() {
+  return /\/channels\//.test(location.href) && /\/card/.test(location.href);
+}
+
 function parseChannelPage() {
   const bodyText = document.body?.innerText || "";
   const title = compactWhitespace(document.querySelector("h1")?.textContent)
@@ -116,26 +144,90 @@ function parseChannelPage() {
   ];
 }
 
-function parseCardElement(card) {
-  const text = card.innerText || "";
-  const linkElement = card.querySelector('a[href*="/channels/"], a[href*="/card"]');
-  const href = linkElement ? new URL(linkElement.getAttribute("href"), location.origin).toString() : location.href;
+function resolveChannelUrl(href) {
+  if (!href) {
+    return "";
+  }
 
-  const heading = compactWhitespace(
-    card.querySelector("h2, h3, h4, [class*='title'], [class*='name']")?.textContent
-  ) || compactWhitespace(linkElement?.textContent);
+  try {
+    return new URL(href, location.origin).toString();
+  } catch {
+    return "";
+  }
+}
+
+function isTitleLikeLink(link) {
+  const text = compactWhitespace(link.textContent);
+
+  if (!text) {
+    return false;
+  }
+
+  const excluded = new Set([
+    "Посмотреть канал",
+    "Выбрать",
+    "Подробнее",
+    "Войти",
+    "Регистрация"
+  ]);
+
+  if (excluded.has(text)) {
+    return false;
+  }
+
+  return /\/channels\//.test(link.getAttribute("href") || "");
+}
+
+function findCardContainer(link) {
+  let current = link;
+
+  while (current && current !== document.body) {
+    const text = current.innerText || "";
+
+    if (
+      /Подписчиков:/i.test(text)
+      && /(?:ERR:|Формат:|Действия с каналом|Посмотреть канал)/i.test(text)
+      && text.length < 5000
+    ) {
+      return current;
+    }
+
+    current = current.parentElement;
+  }
+
+  return null;
+}
+
+function parseCardElement(card, titleLink = null) {
+  const text = card?.innerText || "";
+  const linkElement = titleLink || card?.querySelector('a[href*="/channels/"], a[href*="/card"]');
+  const href = resolveChannelUrl(linkElement?.getAttribute("href"));
+
+  const heading = compactWhitespace(titleLink?.textContent)
+    || compactWhitespace(
+      card?.querySelector("h2, h3, h4, [class*='title'], [class*='name']")?.textContent
+    )
+    || compactWhitespace(linkElement?.textContent);
 
   if (!heading) {
     return null;
   }
 
-  const subscribers = parseMetric(extractLabelValue(text, "Подписчики"));
-  const views = parseMetric(extractLabelValue(text, "Просмотры"))
-    || parseMetric(extractLabelValue(text, "Среднее количество просмотров на пост"));
-  const placementPrice = parsePrice(
-    extractLabelValue(text, "Стоимость размещения")
-    || extractLabelValue(text, "Цена")
-    || text.match(/от\s*([\d\s.,]+)/i)?.[1]
+  const subscribers = parseMetric(firstNonEmpty(
+    extractLabelValue(text, "Подписчиков"),
+    extractLabelValue(text, "Подписчики")
+  ));
+  const views = parseMetric(firstNonEmpty(
+    extractLabelValue(text, "Просмотров"),
+    extractLabelValue(text, "Просмотры"),
+    extractLabelValue(text, "Среднее количество просмотров на пост")
+  ));
+  const currencyValues = extractCurrencyValues(text);
+  const placementPrice = firstNonEmpty(
+    parsePrice(extractLabelValue(text, "Стоимость размещения")),
+    parsePrice(extractLabelValue(text, "Цена")),
+    parsePrice(text.match(/от\s*([\d\s.,]+)/i)?.[1]),
+    currencyValues.find((value) => value > 0) ?? currencyValues[0] ?? null
   );
 
   return normalizeChannel({
@@ -145,41 +237,50 @@ function parseCardElement(card) {
     placementPrice,
     link: href,
     city: inferCity(text),
-    type: inferType(text, href)
+      type: inferType(text, href)
   });
 }
 
 function parseCatalogPage() {
-  const candidates = Array.from(document.querySelectorAll("a[href*='/channels/'], article, [class*='card'], [data-testid*='card']"));
+  const titleLinks = Array.from(document.querySelectorAll("a[href*='/channels/']"))
+    .filter(isTitleLikeLink);
   const uniqueByLink = new Map();
 
-  for (const candidate of candidates) {
-    const card = candidate.closest("article, a, div") || candidate;
-    const parsed = parseCardElement(card);
+  for (const link of titleLinks) {
+    const href = resolveChannelUrl(link.getAttribute("href"));
+
+    if (!href || uniqueByLink.has(href)) {
+      continue;
+    }
+
+    const card = findCardContainer(link);
+
+    if (!card) {
+      continue;
+    }
+
+    const parsed = parseCardElement(card, link);
 
     if (!parsed?.name) {
       continue;
     }
 
-    uniqueByLink.set(parsed.link, parsed);
+    uniqueByLink.set(href, parsed);
   }
 
   return Array.from(uniqueByLink.values());
 }
 
 function parseCurrentPage() {
-  const href = location.href;
-
-  if (/\/channels\//.test(href) && /\/card/.test(href)) {
+  if (isChannelPage()) {
     return parseChannelPage();
   }
 
-  const catalogItems = parseCatalogPage();
-  if (catalogItems.length > 0) {
-    return catalogItems;
+  if (isCatalogPage()) {
+    return parseCatalogPage();
   }
 
-  return parseChannelPage();
+  return [];
 }
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
@@ -189,6 +290,14 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
   try {
     const items = parseCurrentPage();
+
+    if (isCatalogPage() && items.length === 0) {
+      sendResponse({
+        ok: false,
+        error: "Не удалось найти карточки каталога на странице. Обновите страницу и попробуйте снова."
+      });
+      return true;
+    }
 
     sendResponse({
       ok: true,
