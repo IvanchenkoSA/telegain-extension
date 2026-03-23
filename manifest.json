@@ -8,6 +8,9 @@
     "downloads",
     "storage"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "host_permissions": [
     "https://telega.in/*"
   ],

@@ -35,17 +35,28 @@ function toCsv(items) {
   return [header.join(","), ...rows].join("\n");
 }
 
-function downloadFile(filename, content, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
+function downloadFile(filename, content, mimeType, onComplete) {
+  chrome.runtime.sendMessage(
+    {
+      type: "EXPORT_FILE",
+      filename,
+      content,
+      mimeType
+    },
+    (response) => {
+      if (chrome.runtime.lastError) {
+        setStatus(`Ошибка экспорта: ${chrome.runtime.lastError.message}`);
+        return;
+      }
 
-  chrome.downloads.download({
-    url,
-    filename,
-    saveAs: true
-  }, () => {
-    setTimeout(() => URL.revokeObjectURL(url), 5_000);
-  });
+      if (!response?.ok) {
+        setStatus(response?.error || "Экспорт не удался.");
+        return;
+      }
+
+      onComplete();
+    }
+  );
 }
 
 function getFilters() {
@@ -136,8 +147,12 @@ jsonButton.addEventListener("click", () => {
     return;
   }
 
-  downloadFile("telegain-channels.json", JSON.stringify(filteredItems, null, 2), "application/json");
-  setStatus(`Экспортировано ${filteredItems.length} строк в JSON.`);
+  downloadFile(
+    "telegain-channels.json",
+    JSON.stringify(filteredItems, null, 2),
+    "application/json",
+    () => setStatus(`Экспортировано ${filteredItems.length} строк в JSON.`)
+  );
 });
 
 csvButton.addEventListener("click", () => {
@@ -148,8 +163,12 @@ csvButton.addEventListener("click", () => {
     return;
   }
 
-  downloadFile("telegain-channels.csv", toCsv(filteredItems), "text/csv;charset=utf-8");
-  setStatus(`Экспортировано ${filteredItems.length} строк в CSV.`);
+  downloadFile(
+    "telegain-channels.csv",
+    toCsv(filteredItems),
+    "text/csv;charset=utf-8",
+    () => setStatus(`Экспортировано ${filteredItems.length} строк в CSV.`)
+  );
 });
 
 cityFilterInput.addEventListener("input", () => {
