@@ -19,13 +19,14 @@ function escapeCsv(value) {
 }
 
 function toCsv(items) {
-  const header = ["name", "subscribers", "views", "placementPrice", "link", "city", "type"];
+  const header = ["name", "subscribers", "views", "placementPrice", "cpv", "link", "city", "type"];
   const rows = items.map((item) =>
     [
       item.name,
       item.subscribers,
       item.views,
       item.placementPrice,
+      item.cpv,
       item.link,
       item.city,
       item.type
